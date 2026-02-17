@@ -18,14 +18,13 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
   final _topicController = TextEditingController();
   final _goalController = TextEditingController();
   
-  double _durationMinutes = 25;
+  double _durationMinutes = 60;
   String _selectedMethod = 'Standard'; // Standard, Pomodoro, Deep Work
   
   // Recommendations State
   List<YouTubeVideo> _recommendations = [];
   bool _isLoadingRecommendations = false;
   YouTubeVideo? _selectedRecommendedVideo;
-  List<String> _recentTopics = [];
   
   // Saved Videos State
   List<Map<String, dynamic>> _savedVideos = [];
@@ -70,7 +69,6 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
       if (mounted) {
         setState(() {
           _recommendations = recs;
-          _recentTopics = recentTopics;
           _isLoadingRecommendations = false;
         });
       }
@@ -155,30 +153,6 @@ class _SessionSetupScreenState extends State<SessionSetupScreen> {
 
                       if (_selectedTab == 0) ...[
                         // Topic Chips (Phase 17)
-                        if (_recentTopics.isNotEmpty) ...[
-                          const Text(
-                            'Recent Topics',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _recentTopics.map((topic) {
-                              return ActionChip(
-                                label: Text(topic),
-                                avatar: const Icon(Icons.history_rounded, size: 16),
-                                backgroundColor: Colors.white,
-                                onPressed: () {
-                                  setState(() {
-                                    _topicController.text = topic;
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
 
                         // Topic Input
                         TextFormField(

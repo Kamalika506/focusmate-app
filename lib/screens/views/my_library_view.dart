@@ -179,41 +179,79 @@ class _SavedVideosTabState extends State<SavedVideosTab> {
   }
 }
 
-class HistoryTab extends StatelessWidget {
+class HistoryTab extends StatefulWidget {
   const HistoryTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final viewedVideos = DatabaseService().getViewedVideos();
+  State<HistoryTab> createState() => _HistoryTabState();
+}
 
-    if (viewedVideos.isEmpty) {
-      return const Center(child: Text('No viewing history.', style: TextStyle(color: Colors.grey)));
+class _HistoryTabState extends State<HistoryTab> {
+  @override
+  Widget build(BuildContext context) {
+    final history = DatabaseService().getHistory();
+
+    if (history.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('No session history yet.', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        ),
+      );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: viewedVideos.length,
+      itemCount: history.length,
       itemBuilder: (context, index) {
-        final video = viewedVideos[index];
+        final record = history[index];
+        final bool hasVideo = record['videoTitle'] != null;
+        
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-               child: video['thumbnailUrl'] != null && (video['thumbnailUrl'] as String).isNotEmpty
-                  ? Image.network(video['thumbnailUrl'], width: 60, height: 40, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.video_library))
-                  : const Icon(Icons.video_library),
+            leading: Container(
+              width: 50, height: 50,
+              decoration: BoxDecoration(
+                color: Colors.indigo.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  record['grade'] ?? '-',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+                ),
+              ),
             ),
-            title: Text(video['title'] ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(
-              'Viewed: ${DateFormat.yMMMd().format(DateTime.parse(video['lastViewed']))}', 
-              style: const TextStyle(fontSize: 12)
+            title: Text(
+              record['topic'] ?? 'Untitled Session',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasVideo) 
+                  Text(
+                    'Video: ${record['videoTitle']}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                Text(
+                  '${DateFormat.yMMMd().format(DateTime.parse(record['date']))} • ${record['focusScore']}% focus',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ],
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () async {
-                await DatabaseService().deleteViewedVideo(video['videoId']);
-                (context as Element).markNeedsBuild(); // Refresh
+                await DatabaseService().deleteHistoryRecord(record['date']);
+                setState(() {});
               },
             ),
           ),
@@ -223,9 +261,14 @@ class HistoryTab extends StatelessWidget {
   }
 }
 
-class NotesTab extends StatelessWidget {
+class NotesTab extends StatefulWidget {
   const NotesTab({super.key});
 
+  @override
+  State<NotesTab> createState() => _NotesTabState();
+}
+
+class _NotesTabState extends State<NotesTab> {
   @override
   Widget build(BuildContext context) {
     final notes = DatabaseService().getAllNotes();
@@ -258,7 +301,7 @@ class NotesTab extends StatelessWidget {
                       child: TextButton.icon(
                         onPressed: () async {
                           await DatabaseService().deleteHistoryRecord(note['date']);
-                          (context as Element).markNeedsBuild();
+                          if (mounted) setState(() {}); // Refresh UI
                         },
                         icon: const Icon(Icons.delete_rounded, color: Colors.red),
                         label: const Text('DELETE NOTE', style: TextStyle(color: Colors.red)),

@@ -14,7 +14,7 @@ FocusMate is a powerful student productivity app designed to help you stay engag
 - **🔐 Google Sign-In & Sync**: Secure authentication with Firebase and seamless cloud synchronization of your data across devices.
 - **🚀 Offline-First**: Uses Hive for blazing-fast local storage, ensuring the app works even without an internet connection.
 
-## 🤖 Machine Learning & AI Models
+## � Machine Learning & AI Models
 
 FocusMate leverages state-of-the-art on-device machine learning to provide a private and responsive experience.
 
@@ -38,7 +38,7 @@ The app includes the **Google Generative AI (Gemini)** SDK, which is prepared fo
 - **Backend**: [Firebase](https://firebase.google.com/) (Auth & Cloud Firestore)
 - **Local Database**: [Hive](https://pub.dev/packages/hive)
 - **APIs**: YouTube Data API v3
-- **ML Engine**: [Google ML Kit](https://developers.google.com/ml-kit)
+- **ML Engine**: [Google ML Kit](https://developers.google.com/ml-kit) & **Adaptive Threshold Engine (Reinforcement Learning)**
 
 ## 🚀 Getting Started
 

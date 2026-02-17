@@ -9,6 +9,7 @@ class DatabaseService {
   static const String _historyBoxName = 'history';
   static const String _viewedVideosBoxName = 'viewed_videos';
   static const String _savedVideosBoxName = 'saved_videos';
+  static const String _mabBoxName = 'mab_params';
 
   // Singleton instance
   static final DatabaseService _instance = DatabaseService._internal();
@@ -19,6 +20,7 @@ class DatabaseService {
   late Box _historyBox;
   late Box _viewedVideosBox;
   late Box _savedVideosBox;
+  late Box _mabBox;
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   FirebaseAuth get _auth => FirebaseAuth.instance;
@@ -29,6 +31,7 @@ class DatabaseService {
     _historyBox = await Hive.openBox(_historyBoxName);
     _viewedVideosBox = await Hive.openBox(_viewedVideosBoxName);
     _savedVideosBox = await Hive.openBox(_savedVideosBoxName);
+    _mabBox = await Hive.openBox(_mabBoxName);
     
     // Attempt to sync from Firestore if logged in
     if (_uid != null) {
@@ -173,5 +176,18 @@ class DatabaseService {
 
   Future<void> deleteViewedVideo(String videoId) async {
     await _viewedVideosBox.delete(videoId);
+  }
+
+  // MAB Persistence
+  Future<void> saveMABParams(Map<int, List<List<double>>> A, Map<int, List<double>> b) async {
+    await _mabBox.put('A', A);
+    await _mabBox.put('b', b);
+  }
+
+  Map<String, dynamic> getMABParams() {
+    return {
+      'A': _mabBox.get('A'),
+      'b': _mabBox.get('b'),
+    };
   }
 }

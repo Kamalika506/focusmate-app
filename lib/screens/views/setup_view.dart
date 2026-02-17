@@ -22,7 +22,6 @@ class _SetupViewState extends State<SetupView> {
   
   List<YouTubeVideo> _recommendations = [];
   bool _isLoadingRecommendations = false;
-  List<String> _recentTopics = [];
   
   final Map<String, Map<String, int>> _methods = {
     'Standard': {'duration': 60, 'break_interval': 0, 'break_duration': 0},
@@ -57,7 +56,6 @@ class _SetupViewState extends State<SetupView> {
       if (mounted) {
         setState(() {
           _recommendations = recs;
-          _recentTopics = recentTopics;
           _isLoadingRecommendations = false;
         });
       }
@@ -104,20 +102,6 @@ class _SetupViewState extends State<SetupView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   if (_recentTopics.isNotEmpty) ...[
-                    const Text('Recent Topics', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _recentTopics.map((topic) => ActionChip(
-                        label: Text(topic),
-                        avatar: const Icon(Icons.history_rounded, size: 16),
-                        onPressed: () => setState(() => _topicController.text = topic),
-                      )).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
                   TextFormField(
                     controller: _topicController,
                     decoration: InputDecoration(
