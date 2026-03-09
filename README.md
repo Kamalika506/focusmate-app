@@ -41,10 +41,9 @@ FocusMate uses **on-device ML** for focus tracking. Your face is analyzed locall
 
 ### Installation
 1. Clone the repository.
-2. Run `flutter pub get` to install dependencies.
-3. Place your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) in the respective directories.
-4. Add your YouTube API Key in the relevant service file.
-5. Build and run: `flutter run`
+2. Refer to the [TEAMMATE_RUN_GUIDE.md](TEAMMATE_RUN_GUIDE.md) for a detailed step-by-step setup (API keys, Firebase, etc.).
+3. Run `flutter pub get` to install dependencies.
+4. Build and run: `flutter run`
 
 ---
 
