@@ -63,19 +63,6 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
       'latency': '18ms',
       'battery': 'Low',
     },
-    'vit': {
-      'key':   'vit',
-      'title': 'Transformer (Spatial)',
-      'icon':  Icons.psychology_outlined,
-      'color': Colors.deepPurple,
-      'desc':  'Attention-based model that understands complex landmark relationships. Superior for eye-gaze tracking.',
-      'type':  'Attention Mechanism',
-      'accuracy': '96.8%',
-      'f1': '0.94',
-      'cpu': '22%',
-      'latency': '25ms',
-      'battery': 'Medium',
-    },
     'gnn': {
       'key':   'gnn',
       'title': 'Landmark GNN (Graph)',
@@ -158,7 +145,6 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
     final nameMap = {
       'neural':    'CNN (Custom)',
       'mobilenet': 'MobileNetV2',
-      'vit':       'Vision Transformer',
     };
     
     final targetName = nameMap[key];
@@ -206,7 +192,6 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
                 ],
               ),
               _buildTableRow('CNN+LSTM', '94%', '0.91', '12%', 'Low'),
-              _buildTableRow('Transformer', '97%', '0.94', '22%', 'Med'),
               _buildTableRow('Landmark GNN', '93%', '0.89', '5%', 'V.Low'),
             ],
           ),
@@ -215,12 +200,13 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
     );
   }
 
-  TableRow _buildTableRow(String model, String acc, String lat, String power) {
+  TableRow _buildTableRow(String model, String acc, String f1, String cpu, String power) {
     return TableRow(
       children: [
         Padding(padding: const EdgeInsets.all(8), child: Text(model, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
         Padding(padding: const EdgeInsets.all(8), child: Text(acc, style: const TextStyle(fontSize: 11))),
-        Padding(padding: const EdgeInsets.all(8), child: Text(lat, style: const TextStyle(fontSize: 11))),
+        Padding(padding: const EdgeInsets.all(8), child: Text(f1, style: const TextStyle(fontSize: 11))),
+        Padding(padding: const EdgeInsets.all(8), child: Text(cpu, style: const TextStyle(fontSize: 11))),
         Padding(padding: const EdgeInsets.all(8), child: Text(power, style: TextStyle(fontSize: 11, color: power.contains('Low') ? Colors.green : Colors.orange))),
       ],
     );
@@ -333,7 +319,7 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Neural Lab',
+                  Text('Intelligence Hub',
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                   Text('High-Performance Engines',
                       style: TextStyle(fontSize: 14, color: Colors.white70)),
@@ -493,6 +479,7 @@ class _ModelLabScreenState extends State<ModelLabScreen> {
     final prec = m != null ? '${(m.precision * 100).toStringAsFixed(1)}%' : 'N/A';
     final rec = m != null ? '${(m.recall * 100).toStringAsFixed(1)}%' : 'N/A';
 
+    final info = _modelInfo[key]!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [

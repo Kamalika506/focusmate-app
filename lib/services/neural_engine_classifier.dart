@@ -12,28 +12,19 @@ import 'face_mesh_service.dart';
 // import 'package:image/image.dart' as img;
 // import 'package:camera/camera.dart';
 
-enum EngineType { neural, mobilenet, vit }
+enum EngineType { neural, gnn }
 
 class NeuralEngineClassifier {
   final FaceMeshService _faceMeshService = FaceMeshService();
   
   EngineType activeEngine = EngineType.neural;
   
-  // Interpreter? _lstmInterpreter;
-  // Interpreter? _mobilenetInterpreter;
-  // Interpreter? _vitInterpreter;
-  // bool _isLstmLoaded = false;
-  // bool _isMobilenetLoaded = false;
-  // bool _isVitLoaded = false;
-
   // Temporal Buffer for LSTM (e.g., last 5 seconds of EAR and Pose)
   final List<List<double>> _featureHistory = [];
   static const int _historyLimit = 15; // ~5 seconds at 3fps
 
   Future<void> init() async {
     await _faceMeshService.init();
-    
-  
   }
 
   Future<NeuralOutput> analyze(InputImage inputImage, dynamic rawImage) async {
@@ -55,13 +46,7 @@ class NeuralEngineClassifier {
         isDrowsy = (meshMetrics?.isDrowsy ?? false);
         break;
 
-      case EngineType.mobilenet:
-        // Model 2: Landmark Transformer (ViT)
-        isDistracted = (meshMetrics?.yaw.abs() ?? 0) > 0.35 || (meshMetrics?.pitch.abs() ?? 0) > 0.35;
-        isDrowsy = (meshMetrics?.ear ?? 1.0) < 0.22;
-        break;
-
-      case EngineType.vit:
+      case EngineType.gnn:
         // Model 3: Landmark GNN
         isDistracted = (meshMetrics?.yaw.abs() ?? 0) > 0.55 || (meshMetrics?.pitch.abs() ?? 0) > 0.55;
         isDrowsy = (meshMetrics?.ear ?? 1.0) < 0.18;

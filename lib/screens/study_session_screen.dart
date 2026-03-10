@@ -140,11 +140,10 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
       final savedKey = DatabaseService().getSetting('active_model_key', defaultValue: 'neural') as String;
       _activeModelKey = savedKey;
       _activeModelName = _activeModelKey == 'neural' 
-          ? 'Neural Engine (v3)' 
-          : (_activeModelKey == 'mobilenet' ? 'MobileNetV2' : 'Vision Transformer');
+          ? 'CNN+LSTM Engine' 
+          : 'Landmark GNN';
       
-      if (_activeModelKey == 'mobilenet') _neuralEngine.activeEngine = EngineType.mobilenet;
-      if (_activeModelKey == 'vit') _neuralEngine.activeEngine = EngineType.vit;
+      if (_activeModelKey == 'gnn') _neuralEngine.activeEngine = EngineType.gnn;
       
       debugPrint('StudySessionScreen: Neural Engine initialized with model: $_activeModelKey');
     });

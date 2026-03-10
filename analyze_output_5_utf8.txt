@@ -1,9 +1,0 @@
-﻿Analyzing focusmateapp...                                       
-
-  error - The class 'gsi.GoogleSignIn' doesn't have an unnamed constructor - lib\screens\auth_screen.dart:15:42 - new_with_undefined_constructor_default
-  error - The method 'signIn' isn't defined for the type 'GoogleSignIn' - lib\screens\auth_screen.dart:20:71 - undefined_method
-   info - Uses 'await' on an instance of 'GoogleSignInAuthentication', which is not a subtype of 'Future' - lib\screens\auth_screen.dart:26:26 - await_only_futures
-  error - The getter 'accessToken' isn't defined for the type 'GoogleSignInAuthentication' - lib\screens\auth_screen.dart:28:33 - undefined_getter
-warning - Duplicate import - lib\screens\study_session_screen.dart:19:8 - duplicate_import
-warning - Unused import: '../../models/playlist.dart' - lib\screens\views\setup_view.dart:3:8 - unused_import
-

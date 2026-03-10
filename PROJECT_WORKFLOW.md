@@ -21,7 +21,7 @@ FocusMate is a productivity application designed to help students maintain focus
 - **The Neural Engine**:
     - **Landmark-First Tracking**: Continuous tracking of 468 facial landmarks using Google ML Kit.
     - **Feature Extraction**: Real-time conversion of landmarks into Eye Aspect Ratio (EAR) and Head Pose.
-    - **Multi-Model Inference**: Analyzes focus using the user's choice of CNN-LSTM, Transformer, or GNN architectures trained on landmark vectors.
+    - **Multi-Model Inference**: Analyzes focus using the user's choice of CNN-LSTM or GNN architectures trained on landmark vectors.
 - **Proactive Interventions**:
     - **Auto-Pause**: If a distraction is detected for a sustained period, the video pauses automatically.
     - **Visual Alerts**: On-screen prompts warn the user if they look away or show signs of drowsiness.
@@ -33,5 +33,5 @@ FocusMate is a productivity application designed to help students maintain focus
     - **100% Local**: Session data and analytics are saved exclusively to Hive. No data ever leaves the device.
 
 ## 6. Model Lab (Advanced Tools)
-- **Comparison Tool**: A dedicated screen allows users to test different AI models (CNN, MobileNetV2, ViT) and view their performance metrics (Accuracy, F1-Score).
+- **Comparison Tool**: A dedicated screen allows users to test different AI models (CNN-LSTM, GNN) and view their performance metrics (Accuracy, F1-Score).
 - **In-App Training**: Users can trigger simplified "training" simulations to understand how models learn from focus data.

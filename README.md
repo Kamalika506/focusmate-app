@@ -22,7 +22,6 @@ FocusMate uses **on-device ML** for focus tracking. Your face is analyzed locall
 - **Assets**: `distraction_cnn.tflite` and `drowsiness_lstm.tflite`.
 
 ### 2. ML Pipeline (Python)
-- **Full training** (requires dataset): `ml_pipeline/distraction_model_training.py`. Produces the TFLite assets.
 - **Minimal CNN only**: `ml_pipeline/export_minimal_cnn.py`.
 
 ## 🛠️ Tech Stack
