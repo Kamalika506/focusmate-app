@@ -1,94 +1,125 @@
-// lib/services/neural_engine_classifier.dart
-// 
-// The central AI orchestration service for the FocusMate application.
-// Coordinates with the FaceMeshService to provide real-time distraction and drowsiness classification.
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_mesh_detection/google_mlkit_face_mesh_detection.dart';
+
+import 'attention_model_config.dart';
 import 'face_mesh_service.dart';
-// import 'package:tflite_flutter/tflite_flutter.dart';
-// import 'package:image/image.dart' as img;
-// import 'package:camera/camera.dart';
+import 'model_inference_service.dart';
 
 enum EngineType { neural, gnn }
 
 class NeuralEngineClassifier {
   final FaceMeshService _faceMeshService = FaceMeshService();
-  
+  final ModelInferenceService _modelInferenceService = ModelInferenceService();
+
   EngineType activeEngine = EngineType.neural;
-  
-  // Temporal Buffer for LSTM (e.g., last 5 seconds of EAR and Pose)
   final List<List<double>> _featureHistory = [];
-  static const int _historyLimit = 15; // ~5 seconds at 3fps
 
   Future<void> init() async {
     await _faceMeshService.init();
+    await _modelInferenceService.init();
   }
 
   Future<NeuralOutput> analyze(InputImage inputImage, dynamic rawImage) async {
-    // 1. Get Face Mesh Metrics (Foundation for all)
     final meshMetrics = await _faceMeshService.processImage(inputImage);
-    
-    if (meshMetrics != null) {
-      _updateHistory(meshMetrics);
+    if (meshMetrics == null) {
+      _featureHistory.clear();
+      return const NeuralOutput.empty();
     }
 
-    bool isDistracted = false;
-    bool isDrowsy = false;
+    _updateHistory(meshMetrics.temporalFeatures);
 
-    // Defaulting to Mesh-based detection as TFLite models are gone
-    switch (activeEngine) {
-      case EngineType.neural:
-        // Model 1: CNN+LSTM on EAR sequences
-        isDistracted = (meshMetrics?.yaw.abs() ?? 0) > 0.45 || (meshMetrics?.pitch.abs() ?? 0) > 0.45;
-        isDrowsy = (meshMetrics?.isDrowsy ?? false);
-        break;
+    final useGraphModel = activeEngine == EngineType.gnn;
+    final inference = useGraphModel
+        ? _modelInferenceService.runGraphModel(meshMetrics.normalizedLandmarks)
+        : _runTemporalInference(meshMetrics);
 
-      case EngineType.gnn:
-        // Model 3: Landmark GNN
-        isDistracted = (meshMetrics?.yaw.abs() ?? 0) > 0.55 || (meshMetrics?.pitch.abs() ?? 0) > 0.55;
-        isDrowsy = (meshMetrics?.ear ?? 1.0) < 0.18;
-        break;
-    }
+    final fallbackProbability = _fallbackProbability(meshMetrics);
+    final modelLoaded = inference.modelLoaded;
+    final distractionProbability =
+        modelLoaded ? inference.distractionProbability : fallbackProbability;
+    final confidence = modelLoaded ? inference.confidence : 0.45;
+    final isDistracted = distractionProbability >= 0.55;
+    final isDrowsy = meshMetrics.isDrowsy || meshMetrics.ear < 0.18;
 
     return NeuralOutput(
-      ear: meshMetrics?.ear ?? 0.0,
+      ear: meshMetrics.ear,
+      distractionProbability: distractionProbability,
+      confidence: confidence,
       isDistracted: isDistracted,
       isDrowsy: isDrowsy,
       metrics: meshMetrics,
+      modelLoaded: modelLoaded,
+      activeModelKey: useGraphModel ? 'gnn' : 'cnn_lstm',
     );
   }
 
-  void _updateHistory(FaceMeshMetrics metrics) {
-    _featureHistory.add([metrics.ear, metrics.yaw, metrics.pitch, metrics.roll]);
-    if (_featureHistory.length > _historyLimit) {
+  InferenceResult _runTemporalInference(FaceMeshMetrics metrics) {
+    if (_featureHistory.length < AttentionModelConfig.sequenceLength) {
+      return const InferenceResult(
+        distractionProbability: 0,
+        confidence: 0,
+        modelLoaded: false,
+      );
+    }
+
+    final sequence = _featureHistory
+        .skip(_featureHistory.length - AttentionModelConfig.sequenceLength)
+        .toList();
+    return _modelInferenceService.runCnnLstm(sequence);
+  }
+
+  void _updateHistory(List<double> features) {
+    _featureHistory.add(features);
+    if (_featureHistory.length > AttentionModelConfig.sequenceLength) {
       _featureHistory.removeAt(0);
     }
   }
 
+  double _fallbackProbability(FaceMeshMetrics metrics) {
+    final yawRisk = (metrics.yaw.abs() / 0.75).clamp(0.0, 1.0);
+    final pitchRisk = (metrics.pitch.abs() / 0.85).clamp(0.0, 1.0);
+    final earRisk = ((0.24 - metrics.ear) / 0.12).clamp(0.0, 1.0);
+    final mouthRisk = ((metrics.mouthAspectRatio - 0.18) / 0.24).clamp(0.0, 1.0);
 
- 
+    return (0.45 * yawRisk) +
+        (0.25 * pitchRisk) +
+        (0.2 * earRisk) +
+        (0.1 * mouthRisk);
+  }
 
   void dispose() {
     _faceMeshService.dispose();
-    // _lstmInterpreter?.close();
-    // _mobilenetInterpreter?.close();
-    // _vitInterpreter?.close();
+    _modelInferenceService.dispose();
   }
 }
 
 class NeuralOutput {
   final double ear;
+  final double distractionProbability;
+  final double confidence;
   final bool isDistracted;
   final bool isDrowsy;
   final FaceMeshMetrics? metrics;
+  final bool modelLoaded;
+  final String activeModelKey;
 
-  NeuralOutput({
+  const NeuralOutput({
     required this.ear,
+    required this.distractionProbability,
+    required this.confidence,
     required this.isDistracted,
     required this.isDrowsy,
     this.metrics,
+    required this.modelLoaded,
+    required this.activeModelKey,
   });
+
+  const NeuralOutput.empty()
+      : ear = 0,
+        distractionProbability = 0,
+        confidence = 0,
+        isDistracted = false,
+        isDrowsy = false,
+        metrics = null,
+        modelLoaded = false,
+        activeModelKey = 'cnn_lstm';
 }

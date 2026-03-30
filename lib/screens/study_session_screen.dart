@@ -15,7 +15,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
 // ── ML Kit (RE-ENABLED for face cropping) ──────────────────────
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 // ─────────────────────────────────────────────────────────────────────────
 
 
@@ -83,13 +83,14 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
   bool _isFaceDetected = false;      
   bool _isLookingAtScreen = false;   
   bool _isProcessingImage = false;
-  double _currentEAR = 0.0;
-  String _activeModelKey = 'neural';
-  String _activeModelName = 'Neural Engine (v3)';
+  double _distractionProbability = 0.0;
+  double _modelConfidence = 0.0;
+  bool _isModelLoaded = false;
+  String _activeModelKey = 'cnn_lstm';
+  String _activeModelName = 'CNN+LSTM Engine';
   bool _isDimmed = false;
 
   // ── ML Kit fields (RE-ENABLED for intelligent cropping) ─────────────
-  late FaceDetector _faceDetector;
   // ──────────────────────────────────────────────────────────────────────
 
   // YouTube Search
@@ -137,9 +138,9 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
     // ── Initialize Neural Engine ──
     _neuralEngine.init().then((_) {
       // Load active model from DB and apply to engine
-      final savedKey = DatabaseService().getSetting('active_model_key', defaultValue: 'neural') as String;
-      _activeModelKey = savedKey;
-      _activeModelName = _activeModelKey == 'neural' 
+      final savedKey = DatabaseService().getSetting('active_model_key', defaultValue: 'cnn_lstm') as String;
+      _activeModelKey = savedKey == 'neural' ? 'cnn_lstm' : savedKey;
+      _activeModelName = _activeModelKey == 'cnn_lstm'
           ? 'CNN+LSTM Engine' 
           : 'Landmark GNN';
       
@@ -149,14 +150,6 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
     });
 
     // ── ML Kit FaceDetector (RE-ENABLED) ──────────────────────
-    _faceDetector = FaceDetector(
-      options: FaceDetectorOptions(
-        enableTracking: true,
-        enableClassification: true,
-        enableLandmarks: true,
-        performanceMode: FaceDetectorMode.fast,
-      ),
-    );
     // ──────────────────────────────────────────────────────────────────────
   }
 
@@ -316,7 +309,13 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
         setState(() {
           _isFaceDetected = output.metrics != null;
           _isLookingAtScreen = !output.isDistracted;
-          _currentEAR = output.ear;
+          _distractionProbability = output.distractionProbability;
+          _modelConfidence = output.confidence;
+          _isModelLoaded = output.modelLoaded;
+          _activeModelKey = output.activeModelKey;
+          _activeModelName = output.activeModelKey == 'gnn'
+              ? 'Landmark GNN'
+              : 'CNN+LSTM Engine';
           _handleGraduatedIntervention(output);
         });
       }
@@ -677,7 +676,6 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
     _timer?.cancel();
     _ytController?.dispose();
     _cameraController?.dispose();
-    _faceDetector.close();
     super.dispose();
   }
 
@@ -821,11 +819,11 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
     if (_isFaceDetected) {
       if (_isLookingAtScreen) {
         color = Colors.green; 
-        text = 'FOCUSED (EAR: ${_currentEAR.toStringAsFixed(2)})'; 
+        text = 'FOCUSED ${(100 - (_distractionProbability * 100)).toStringAsFixed(0)}%'; 
         icon = Icons.face;
       } else {
         color = Colors.orange;
-        text = 'VISUAL DRIFT';
+        text = 'DISTRACTED ${(_distractionProbability * 100).toStringAsFixed(0)}%';
         icon = Icons.visibility_off;
       }
     }
@@ -849,7 +847,8 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
           ),
         ),
         const SizedBox(height: 8),
-        Text('Using: $_activeModelName', 
+        Text(
+            'Using: $_activeModelName • Confidence ${(100 * _modelConfidence).toStringAsFixed(0)}% • ${_isModelLoaded ? 'TFLite' : 'Fallback'}',
             style: TextStyle(fontSize: 10, color: Colors.grey[500], fontStyle: FontStyle.italic)),
       ],
     );

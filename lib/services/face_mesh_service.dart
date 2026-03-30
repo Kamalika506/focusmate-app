@@ -1,12 +1,9 @@
-// lib/services/face_mesh_service.dart
-// 
-// Service utilizing Google ML Kit Face Mesh Detection to analyze facial landmarks.
-// Calculates metrics such as Eye Aspect Ratio (EAR) for drowsiness detection
-// and estimates head pose (Yaw, Pitch, Roll) for tracking visual focus.
-
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_mesh_detection/google_mlkit_face_mesh_detection.dart';
+
+import 'attention_model_config.dart';
 
 class FaceMeshService {
   late final FaceMeshDetector _detector;
@@ -21,54 +18,76 @@ class FaceMeshService {
   }
 
   Future<FaceMeshMetrics?> processImage(InputImage inputImage) async {
-    if (!_isInitialized) return null;
+    if (!_isInitialized) {
+      return null;
+    }
 
-    final List<FaceMesh> meshes = await _detector.processImage(inputImage);
-    if (meshes.isEmpty) return null;
+    final meshes = await _detector.processImage(inputImage);
+    if (meshes.isEmpty) {
+      return null;
+    }
 
-    final mesh = meshes.first;
-    final points = mesh.points;
+    final points = meshes.first.points;
+    if (points.length <= AttentionModelConfig.landmarkIndices.last) {
+      return null;
+    }
 
-    // Calculate EAR for both eyes
-    final leftEAR = _calculateEAR(points, [362, 385, 387, 263, 373, 380]);
-    final rightEAR = _calculateEAR(points, [33, 160, 158, 133, 153, 144]);
-    final avgEAR = (leftEAR + rightEAR) / 2;
-
-    // Calculate Head Pose (simplified)
-    final pose = _calculateHeadPose(points);
-
-    // Calculate Bounding Box
     final faceBox = _calculateBoundingBox(points);
+    final pose = _calculateHeadPose(points);
+    final ear = _calculateAverageEar(points);
+    final mouthAspectRatio = _calculateMouthAspectRatio(points);
+    final browDistance = _calculateBrowDistance(points);
+    final irisDistance = _calculateIrisDistance(points);
+    final normalizedLandmarks = _extractNormalizedLandmarks(points);
 
     return FaceMeshMetrics(
-      ear: avgEAR,
+      ear: ear,
       yaw: pose.yaw,
       pitch: pose.pitch,
       roll: pose.roll,
-      isDrowsy: avgEAR < 0.2, // Baseline threshold
+      isDrowsy: ear < 0.19,
       faceBox: faceBox,
+      mouthAspectRatio: mouthAspectRatio,
+      browDistance: browDistance,
+      irisDistance: irisDistance,
+      normalizedLandmarks: normalizedLandmarks,
+      temporalFeatures: [
+        ear,
+        pose.yaw,
+        pose.pitch,
+        pose.roll,
+        mouthAspectRatio,
+        browDistance,
+        irisDistance,
+        faceBox.width == 0 ? 0 : faceBox.height / faceBox.width,
+        ...normalizedLandmarks.expand((coords) => coords),
+      ],
     );
   }
 
   Rect _calculateBoundingBox(List<FaceMeshPoint> points) {
-    double minX = double.infinity;
-    double minY = double.infinity;
-    double maxX = double.negativeInfinity;
-    double maxY = double.negativeInfinity;
+    var minX = double.infinity;
+    var minY = double.infinity;
+    var maxX = double.negativeInfinity;
+    var maxY = double.negativeInfinity;
 
-    for (var point in points) {
-      if (point.x < minX) minX = point.x.toDouble();
-      if (point.y < minY) minY = point.y.toDouble();
-      if (point.x > maxX) maxX = point.x.toDouble();
-      if (point.y > maxY) maxY = point.y.toDouble();
+    for (final point in points) {
+      minX = min(minX, point.x.toDouble());
+      minY = min(minY, point.y.toDouble());
+      maxX = max(maxX, point.x.toDouble());
+      maxY = max(maxY, point.y.toDouble());
     }
 
     return Rect.fromLTRB(minX, minY, maxX, maxY);
   }
 
-  double _calculateEAR(List<FaceMeshPoint> points, List<int> indices) {
-    // MediaPipe EAR formula
-    // EAR = (|p2-p6| + |p3-p5|) / (2 * |p1-p4|)
+  double _calculateAverageEar(List<FaceMeshPoint> points) {
+    final left = _calculateEar(points, [362, 385, 387, 263, 373, 380]);
+    final right = _calculateEar(points, [33, 160, 158, 133, 153, 144]);
+    return (left + right) / 2;
+  }
+
+  double _calculateEar(List<FaceMeshPoint> points, List<int> indices) {
     final p1 = points[indices[0]];
     final p2 = points[indices[1]];
     final p3 = points[indices[2]];
@@ -76,36 +95,90 @@ class FaceMeshService {
     final p5 = points[indices[4]];
     final p6 = points[indices[5]];
 
-    final v1 = _dist(p2, p6);
-    final v2 = _dist(p3, p5);
-    final h = _dist(p1, p4);
+    final v1 = _distance(p2, p6);
+    final v2 = _distance(p3, p5);
+    final h = _distance(p1, p4);
 
-    return (v1 + v2) / (2.0 * h);
+    if (h == 0) {
+      return 0;
+    }
+    return (v1 + v2) / (2 * h);
   }
 
-  double _dist(FaceMeshPoint a, FaceMeshPoint b) {
-    return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2));
+  double _calculateMouthAspectRatio(List<FaceMeshPoint> points) {
+    final upperLip = points[13];
+    final lowerLip = points[14];
+    final leftMouth = points[61];
+    final rightMouth = points[291];
+    final width = _distance(leftMouth, rightMouth);
+
+    if (width == 0) {
+      return 0;
+    }
+    return _distance(upperLip, lowerLip) / width;
+  }
+
+  double _calculateBrowDistance(List<FaceMeshPoint> points) {
+    final leftBrow = points[70];
+    final rightBrow = points[300];
+    final leftEye = points[159];
+    final rightEye = points[386];
+
+    final left = _distance(leftBrow, leftEye);
+    final right = _distance(rightBrow, rightEye);
+    return (left + right) / 2;
+  }
+
+  double _calculateIrisDistance(List<FaceMeshPoint> points) {
+    final noseTip = points[1];
+    final leftEye = points[33];
+    final rightEye = points[263];
+    final eyeSpan = _distance(leftEye, rightEye);
+    if (eyeSpan == 0) {
+      return 0;
+    }
+
+    return _distance(noseTip, points[4]) / eyeSpan;
+  }
+
+  List<List<double>> _extractNormalizedLandmarks(List<FaceMeshPoint> points) {
+    final nose = points[1];
+    final leftEye = points[33];
+    final rightEye = points[263];
+    final scale = max(_distance(leftEye, rightEye), 1e-6);
+
+    return AttentionModelConfig.landmarkIndices.map((index) {
+      final point = points[index];
+      return [
+        (point.x - nose.x) / scale,
+        (point.y - nose.y) / scale,
+        (point.z - nose.z) / scale,
+      ];
+    }).toList();
   }
 
   HeadPose _calculateHeadPose(List<FaceMeshPoint> points) {
-    // Simplified pose estimation based on landmarks
-    // Nose tip: 4, Chin: 152, Left eye: 33, Right eye: 263, etc.
-    // This is a rough approximation for the demo.
     final noseTip = points[4];
     final chin = points[152];
     final leftEye = points[33];
     final rightEye = points[263];
 
-    // Pitch: vertical rotation (nose vs eyes/chin)
-    final pitch = (noseTip.y - (leftEye.y + rightEye.y) / 2) / (chin.y - noseTip.y);
-    
-    // Yaw: horizontal rotation (nose vs eyes)
-    final yaw = (noseTip.x - (leftEye.x + rightEye.x) / 2) / (rightEye.x - leftEye.x);
+    final pitchDenominator = max(chin.y - noseTip.y, 1e-6);
+    final yawDenominator = max(rightEye.x - leftEye.x, 1e-6);
 
-    // Roll: side-to-side tilt (eyes level)
-    final roll = (rightEye.y - leftEye.y) / (rightEye.x - leftEye.x);
+    final pitch = (noseTip.y - (leftEye.y + rightEye.y) / 2) / pitchDenominator;
+    final yaw = (noseTip.x - (leftEye.x + rightEye.x) / 2) / yawDenominator;
+    final roll = (rightEye.y - leftEye.y) / yawDenominator;
 
     return HeadPose(yaw: yaw, pitch: pitch, roll: roll);
+  }
+
+  double _distance(FaceMeshPoint a, FaceMeshPoint b) {
+    return sqrt(
+      pow(a.x - b.x, 2) +
+          pow(a.y - b.y, 2) +
+          pow(a.z - b.z, 2),
+    );
   }
 
   Future<void> dispose() async {
@@ -120,6 +193,11 @@ class FaceMeshMetrics {
   final double roll;
   final bool isDrowsy;
   final Rect faceBox;
+  final double mouthAspectRatio;
+  final double browDistance;
+  final double irisDistance;
+  final List<List<double>> normalizedLandmarks;
+  final List<double> temporalFeatures;
 
   FaceMeshMetrics({
     required this.ear,
@@ -128,6 +206,11 @@ class FaceMeshMetrics {
     required this.roll,
     required this.isDrowsy,
     required this.faceBox,
+    required this.mouthAspectRatio,
+    required this.browDistance,
+    required this.irisDistance,
+    required this.normalizedLandmarks,
+    required this.temporalFeatures,
   });
 }
 
@@ -136,5 +219,9 @@ class HeadPose {
   final double pitch;
   final double roll;
 
-  HeadPose({required this.yaw, required this.pitch, required this.roll});
+  const HeadPose({
+    required this.yaw,
+    required this.pitch,
+    required this.roll,
+  });
 }

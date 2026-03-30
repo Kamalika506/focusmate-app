@@ -1,0 +1,62 @@
+{
+  "dataset": {
+    "frames": 2002,
+    "sequences": 6,
+    "labels": {
+      "engaged": 1059,
+      "distracted": 943
+    }
+  },
+  "models": [
+    {
+      "key": "cnn_lstm",
+      "name": "CNN+LSTM",
+      "description": "Temporal model over rolling landmark features for distraction and drowsiness patterns.",
+      "accuracy": 0.8589743589743589,
+      "precision": 0.9333333333333333,
+      "recall": 0.7567567567567568,
+      "f1": 0.835820895522388,
+      "latency_ms": 18.0,
+      "input_shape": "(1, 15, 44)",
+      "exported": true,
+      "samples": 386,
+      "hyperparameters": {
+        "conv_filters": 64,
+        "kernel_size": 3,
+        "lstm_units": 64,
+        "dense_units": 32,
+        "dropout": 0.3,
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "epochs": 10,
+        "patience": 3
+      },
+      "best_val_accuracy": 0.8589743375778198,
+      "best_val_loss": 0.33349087834358215
+    },
+    {
+      "key": "gnn",
+      "name": "Landmark GNN",
+      "description": "Graph-style message passing over facial landmark nodes for spatial attention cues.",
+      "accuracy": 0.8379052369077307,
+      "precision": 0.9246575342465754,
+      "recall": 0.7142857142857143,
+      "f1": 0.8059701492537313,
+      "latency_ms": 11.0,
+      "input_shape": "(1, 12, 3)",
+      "exported": true,
+      "samples": 2002,
+      "hyperparameters": {
+        "hidden_units": 16,
+        "dense_units": 16,
+        "dropout": 0.25,
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "epochs": 12,
+        "patience": 2
+      },
+      "best_val_accuracy": 0.83790522813797,
+      "best_val_loss": 0.37528112530708313
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "objective": "maximize_f1",
+  "trials": 2,
+  "results": [
+    {
+      "trial": 1,
+      "model": "cnn_lstm",
+      "score": 0.8311688311688312,
+      "metrics": {
+        "key": "cnn_lstm",
+        "name": "CNN+LSTM",
+        "description": "Temporal model over rolling landmark features for distraction and drowsiness patterns.",
+        "accuracy": 0.8333333333333334,
+        "precision": 0.8,
+        "recall": 0.8648648648648649,
+        "f1": 0.8311688311688312,
+        "latency_ms": 18.0,
+        "input_shape": "(1, 15, 44)",
+        "exported": false,
+        "samples": 386,
+        "hyperparameters": {
+          "conv_filters": 96,
+          "kernel_size": 3,
+          "lstm_units": 32,
+          "dense_units": 64,
+          "dropout": 0.3,
+          "learning_rate": 0.001,
+          "batch_size": 16,
+          "epochs": 8,
+          "patience": 2
+        },
+        "best_val_accuracy": 0.8717948794364929,
+        "best_val_loss": 0.27669063210487366
+      },
+      "hyperparameters": {
+        "conv_filters": 96,
+        "kernel_size": 3,
+        "lstm_units": 32,
+        "dense_units": 64,
+        "dropout": 0.3,
+        "learning_rate": 0.001,
+        "batch_size": 16,
+        "epochs": 8,
+        "patience": 2
+      }
+    },
+    {
+      "trial": 2,
+      "model": "cnn_lstm",
+      "score": 0.7241379310344828,
+      "metrics": {
+        "key": "cnn_lstm",
+        "name": "CNN+LSTM",
+        "description": "Temporal model over rolling landmark features for distraction and drowsiness patterns.",
+        "accuracy": 0.7948717948717948,
+        "precision": 1.0,
+        "recall": 0.5675675675675675,
+        "f1": 0.7241379310344828,
+        "latency_ms": 18.0,
+        "input_shape": "(1, 15, 44)",
+        "exported": false,
+        "samples": 386,
+        "hyperparameters": {
+          "conv_filters": 96,
+          "kernel_size": 3,
+          "lstm_units": 96,
+          "dense_units": 32,
+          "dropout": 0.2,
+          "learning_rate": 0.001,
+          "batch_size": 16,
+          "epochs": 8,
+          "patience": 2
+        },
+        "best_val_accuracy": 0.7948718070983887,
+        "best_val_loss": 0.5017547011375427
+      },
+      "hyperparameters": {
+        "conv_filters": 96,
+        "kernel_size": 3,
+        "lstm_units": 96,
+        "dense_units": 32,
+        "dropout": 0.2,
+        "learning_rate": 0.001,
+        "batch_size": 16,
+        "epochs": 8,
+        "patience": 2
+      }
+    }
+  ],
+  "best": {
+    "trial": 1,
+    "model": "cnn_lstm",
+    "score": 0.8311688311688312,
+    "metrics": {
+      "key": "cnn_lstm",
+      "name": "CNN+LSTM",
+      "description": "Temporal model over rolling landmark features for distraction and drowsiness patterns.",
+      "accuracy": 0.8333333333333334,
+      "precision": 0.8,
+      "recall": 0.8648648648648649,
+      "f1": 0.8311688311688312,
+      "latency_ms": 18.0,
+      "input_shape": "(1, 15, 44)",
+      "exported": false,
+      "samples": 386,
+      "hyperparameters": {
+        "conv_filters": 96,
+        "kernel_size": 3,
+        "lstm_units": 32,
+        "dense_units": 64,
+        "dropout": 0.3,
+        "learning_rate": 0.001,
+        "batch_size": 16,
+        "epochs": 8,
+        "patience": 2
+      },
+      "best_val_accuracy": 0.8717948794364929,
+      "best_val_loss": 0.27669063210487366
+    },
+    "hyperparameters": {
+      "conv_filters": 96,
+      "kernel_size": 3,
+      "lstm_units": 32,
+      "dense_units": 64,
+      "dropout": 0.3,
+      "learning_rate": 0.001,
+      "batch_size": 16,
+      "epochs": 8,
+      "patience": 2
+    }
+  }
+}

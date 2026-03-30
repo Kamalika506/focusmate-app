@@ -1,0 +1,26 @@
+{
+  "key": "cnn_lstm",
+  "name": "CNN+LSTM",
+  "description": "Temporal model over rolling landmark features for distraction and drowsiness patterns.",
+  "accuracy": 0.8589743589743589,
+  "precision": 0.9333333333333333,
+  "recall": 0.7567567567567568,
+  "f1": 0.835820895522388,
+  "latency_ms": 18.0,
+  "input_shape": "(1, 15, 44)",
+  "exported": true,
+  "samples": 386,
+  "hyperparameters": {
+    "conv_filters": 64,
+    "kernel_size": 3,
+    "lstm_units": 64,
+    "dense_units": 32,
+    "dropout": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 10,
+    "patience": 3
+  },
+  "best_val_accuracy": 0.8589743375778198,
+  "best_val_loss": 0.33349087834358215
+}

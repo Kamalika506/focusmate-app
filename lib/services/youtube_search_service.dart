@@ -10,14 +10,17 @@ import 'package:flutter/foundation.dart';
 import '../models/youtube_video.dart';
 
 class YouTubeSearchService {
-  // TODO: Replace with your YouTube Data API v3 key
-  static const String _apiKey = 'AIzaSyDfkdUGuauWpSWqrtuhMx1OT5vQHwG6MOk';
+  static const String _apiKey = String.fromEnvironment('YOUTUBE_API_KEY', defaultValue: '');
   static const String _baseUrl = 'https://www.googleapis.com/youtube/v3';
 
   /// Search YouTube for videos matching the query
   /// Returns top 3 most viewed and relevant study videos
   Future<List<YouTubeVideo>> searchVideos(String query) async {
     if (query.trim().isEmpty) {
+      return [];
+    }
+    if (_apiKey.isEmpty) {
+      debugPrint('YouTube API key missing. Pass --dart-define=YOUTUBE_API_KEY=...');
       return [];
     }
 
