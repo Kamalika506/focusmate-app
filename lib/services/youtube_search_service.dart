@@ -7,10 +7,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/youtube_video.dart';
 
 class YouTubeSearchService {
-  static const String _apiKey = String.fromEnvironment('YOUTUBE_API_KEY', defaultValue: '');
+  static String get _apiKey => dotenv.env['YOUTUBE_API_KEY'] ?? '';
   static const String _baseUrl = 'https://www.googleapis.com/youtube/v3';
 
   /// Search YouTube for videos matching the query

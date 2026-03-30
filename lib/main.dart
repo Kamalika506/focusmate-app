@@ -6,12 +6,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/database_service.dart';
 import 'screens/landing_screen.dart';
 import 'models/session_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
   
   // Initialize Hive
   await Hive.initFlutter();

@@ -13,6 +13,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers
 from tensorflow.keras import models
@@ -122,13 +123,17 @@ def train_model(
     params = params or GnnHyperParams()
     df = pd.read_csv(features_csv)
     x, y = build_dataset(df)
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y,
-    )
+
+    # Since attention frames are sequential and may come from a single recording of one person,
+    # we split with groups to avoid leakage across train/test sequences.
+    groups = df['sequence_id'].to_numpy(dtype=str) if 'sequence_id' in df.columns else np.arange(len(y)).astype(str)
+    split_generator = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, test_idx = next(split_generator.split(x, y, groups=groups))
+
+    x_train = x[train_idx]
+    y_train = y[train_idx]
+    x_test = x[test_idx]
+    y_test = y[test_idx]
 
     model = create_model(params)
     callbacks = [

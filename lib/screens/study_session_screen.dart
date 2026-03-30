@@ -90,6 +90,14 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
   String _activeModelName = 'CNN+LSTM Engine';
   bool _isDimmed = false;
 
+  int _consecutiveDistractedFrames = 0;
+  int _consecutiveFocusedFrames = 0;
+
+  static const int _framesToLockDistracted = 4;
+  static const int _framesToLockFocused = 3;
+  static const double _attentionConfidenceThreshold = 0.45;
+  static const double _distractionProbabilityThreshold = 0.65;
+
   // ── ML Kit fields (RE-ENABLED for intelligent cropping) ─────────────
   // ──────────────────────────────────────────────────────────────────────
 
@@ -147,6 +155,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
       if (_activeModelKey == 'gnn') _neuralEngine.activeEngine = EngineType.gnn;
       
       debugPrint('StudySessionScreen: Neural Engine initialized with model: $_activeModelKey');
+      _autoStartSession();
     });
 
     // ── ML Kit FaceDetector (RE-ENABLED) ──────────────────────
@@ -181,13 +190,19 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
         if (_ytController!.value.hasError) {
           _showError('YouTube Player Error: ${_ytController!.value.errorCode}');
         }
-        
-        // Auto-start session if player is ready and we haven't auto-started yet
-        if (!_isSessionActive && !_isSessionAutoStarted && _ytController!.value.isReady) {
-          _isSessionAutoStarted = true;
-          _startSession();
-        }
       });
+      _autoStartSession();
+    }
+  }
+
+  void _autoStartSession() {
+    if (_isSessionActive || _isSessionAutoStarted) return;
+    if (_ytController == null) return;
+
+    if (_ytController!.value.isReady) {
+      _isSessionAutoStarted = true;
+      _startSession();
+      debugPrint('StudySessionScreen: Auto-starting session at ${DateTime.now()}');
     }
   }
 
@@ -306,9 +321,52 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
       
       final output = await _neuralEngine.analyze(inputImage, image);
       if (mounted) {
+        final faceDetected = output.metrics != null;
+        bool predictedDistracted = output.isDistracted;
+
+        if (faceDetected && output.metrics != null) {
+          final yaw = output.metrics!.yaw.abs();
+          final pitch = output.metrics!.pitch.abs();
+          final ear = output.metrics!.ear;
+
+          // If model confidence is low, avoid treating as distracted
+          if (output.confidence < _attentionConfidenceThreshold) {
+            predictedDistracted = false;
+          }
+
+          // If head is nearly straight and eyes open, prefer focus
+          if (yaw < 0.15 && pitch < 0.15 && ear > 0.19) {
+            predictedDistracted = false;
+          }
+
+          // Keep model-based distraction only if it clearly exceeds higher threshold
+          if (output.distractionProbability < _distractionProbabilityThreshold) {
+            predictedDistracted = false;
+          }
+        } else {
+          predictedDistracted = true;
+        }
+
+        if (predictedDistracted) {
+          _consecutiveDistractedFrames++;
+          _consecutiveFocusedFrames = 0;
+        } else {
+          _consecutiveFocusedFrames++;
+          _consecutiveDistractedFrames = 0;
+        }
+
+        final lockedDistraction = _consecutiveDistractedFrames >= _framesToLockDistracted;
+        final lockedFocus = _consecutiveFocusedFrames >= _framesToLockFocused;
+
         setState(() {
-          _isFaceDetected = output.metrics != null;
-          _isLookingAtScreen = !output.isDistracted;
+          _isFaceDetected = faceDetected;
+          if (!faceDetected) {
+            _isLookingAtScreen = false;
+          } else if (lockedDistraction) {
+            _isLookingAtScreen = false;
+          } else if (lockedFocus) {
+            _isLookingAtScreen = true;
+          }
           _distractionProbability = output.distractionProbability;
           _modelConfidence = output.confidence;
           _isModelLoaded = output.modelLoaded;
@@ -405,6 +463,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
 
     setState(() {
       _isSessionActive = true;
+      _isSessionAutoStarted = true;
       _isDistracted = false;
       _wasPausedByApp = false;
       _distractionSeconds = 0;
@@ -634,20 +693,36 @@ class _StudySessionScreenState extends State<StudySessionScreen> with WidgetsBin
   }
 
   Future<void> _searchYouTube() async {
-    final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+    var query = _searchController.text.trim();
+    if (query.isEmpty) {
+      query = widget.sessionConfig.topic.trim();
+      _searchController.text = query;
+    }
+    if (query.isEmpty) {
+      _showError('Please enter a topic to search for videos.');
+      return;
+    }
+
     setState(() => _isSearching = true);
     try {
       final res = await _searchService.searchVideos(query);
       setState(() { _searchResults = res; _isSearching = false; });
-      
-      // Auto-select first result if session is auto-starting and we have no active video yet
+
+      if (res.isEmpty) {
+        _showError('No related videos found for "$query". Please try another search term.');
+      }
+
+      // Auto-select first result if there's no active video yet
       if (res.isNotEmpty && !_isSessionActive && _activeVideo == null) {
         _selectVideo(res.first);
-        // Note: _startSession will be called by _onYoutubePlayerChange once _selectVideo loads the new video
       }
-    } catch (e) {
+
+      _autoStartSession();
+    } catch (e, st) {
       setState(() => _isSearching = false);
+      debugPrint('Search error: $e');
+      debugPrint('Stack trace: $st');
+      _showError('Cannot fetch videos. Check API key and network connection.');
     }
   }
 
