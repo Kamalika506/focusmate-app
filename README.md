@@ -16,8 +16,8 @@ FocusMate is a Flutter app for studying with YouTube while monitoring user atten
 1. `extract_features.py`
    Extracts landmark-based features and normalized node coordinates from the dataset.
 2. `train_cnn.py`
-   Trains and exports the temporal `CNN` model to `assets/models/focusmate_cnn_lstm.tflite`.
-3. `train_attention_models.py`
+   Trains and exports the temporal `CNN` model to `assets/models/focusmate_cnn.tflite`.
+4. `train_attention_models.py`
    Runs the full pipeline and writes `assets/model_metrics.json` for the in-app Model Lab screen.
 
 
