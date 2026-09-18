@@ -6,7 +6,7 @@ FocusMate is a Flutter app for studying with YouTube while monitoring user atten
 
 - Plays YouTube videos inside a guided study session
 - Watches facial landmarks from the camera on-device
-- Lets the user choose `CNN+LSTM` or `GNN` before or during a demo
+- Lets the user choose `CNN` before or during a demo
 - Detects distraction and drowsiness cues
 - Intervenes by dimming, pausing, and suggesting breaks
 - Stores settings and session history locally with Hive
@@ -15,20 +15,16 @@ FocusMate is a Flutter app for studying with YouTube while monitoring user atten
 
 1. `extract_features.py`
    Extracts landmark-based features and normalized node coordinates from the dataset.
-2. `train_lstm.py`
-   Trains and exports the temporal `CNN+LSTM` model to `assets/models/focusmate_cnn_lstm.tflite`.
-3. `train_gnn.py`
-   Trains and exports the graph-style landmark model to `assets/models/focusmate_gnn.tflite`.
-4. `train_attention_models.py`
+2. `train_cnn.py`
+   Trains and exports the temporal `CNN` model to `assets/models/focusmate_cnn_lstm.tflite`.
+3. `train_attention_models.py`
    Runs the full pipeline and writes `assets/model_metrics.json` for the in-app Model Lab screen.
-5. `hyperparameter_tuning.py`
-   Runs random-search hyperparameter tuning for `CNN+LSTM`, `GNN`, or both.
+
 
 ## Generated artifacts
 
 - `features_landmarks.csv`
-- `assets/models/focusmate_cnn_lstm.tflite`
-- `assets/models/focusmate_gnn.tflite`
+- `assets/models/focusmate_cnn.tflite`
 - `assets/model_metrics.json`
 
 ## Run the app
@@ -43,16 +39,6 @@ Use the repo Python environment that already has TensorFlow and MediaPipe:
 ```powershell
 .\venv310\Scripts\python.exe train_attention_models.py
 ```
-
-## Hyperparameter tuning
-
-```powershell
-.\venv310\Scripts\python.exe hyperparameter_tuning.py --model both --trials 4
-```
-
-Detailed explanation:
-
-- [`MODEL_TRAINING_GUIDE.md`](/c:/Users/KamalHp/Downloads/focusmateapp/MODEL_TRAINING_GUIDE.md)
 
 ## Notes
 
